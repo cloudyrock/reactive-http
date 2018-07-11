@@ -1,6 +1,6 @@
 package org.github.cloudyrock.reactivehttp;
 
-class BodyParameterMetadata extends ParameterMetadata {
+final class BodyParameterMetadata extends ParameterMetadata {
 
     BodyParameterMetadata(int index) {
         super(index);

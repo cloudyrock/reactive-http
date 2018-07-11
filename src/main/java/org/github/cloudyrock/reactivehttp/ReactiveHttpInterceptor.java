@@ -21,18 +21,17 @@ import static org.springframework.http.HttpMethod.PATCH;
 import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.http.HttpMethod.PUT;
 
-//todo serialization of complex objects
-class ReactiveInterceptor implements MethodInterceptor {
+class ReactiveHttpInterceptor implements MethodInterceptor {
 
     private final WebClient client;
     private final Map<Method, MethodMetadata> metadataMap;
     private final Map<Class, Function<Object, String>> defaultParamTypeEncoders;
     private final Map<Class, Function<Object, Object>> defaultBodyTypeEncoders;
 
-    ReactiveInterceptor(WebClient client,
-                        Map<Method, MethodMetadata> metadataMap,
-                        Map<Class, Function<Object, String>> defaultParamTypeEncoders,
-                        Map<Class, Function<Object, Object>> defaultBodyTypeEncoders) {
+    ReactiveHttpInterceptor(WebClient client,
+                            Map<Method, MethodMetadata> metadataMap,
+                            Map<Class, Function<Object, String>> defaultParamTypeEncoders,
+                            Map<Class, Function<Object, Object>> defaultBodyTypeEncoders) {
         this.client = client;
         this.metadataMap = metadataMap;
         this.defaultParamTypeEncoders = defaultParamTypeEncoders;
@@ -122,7 +121,7 @@ class ReactiveInterceptor implements MethodInterceptor {
         if (isMethodWithBody(callMetadata)) {
             callMetadata.getParametersMetadata()
                     .stream()
-                    .filter(ReactiveInterceptor::isBodyParam)
+                    .filter(ReactiveHttpInterceptor::isBodyParam)
                     .mapToInt(ParameterMetadata::getIndex)
                     .mapToObj(index -> parametersExecution[index])
                     .map(this::encodeBody)
@@ -142,7 +141,7 @@ class ReactiveInterceptor implements MethodInterceptor {
                                  MethodMetadata callMetadata,
                                  Object[] paramsExecution) {
         callMetadata.getParametersMetadata().stream()
-                .filter(ReactiveInterceptor::isHeaderParam)
+                .filter(ReactiveHttpInterceptor::isHeaderParam)
                 .map(param -> (NamedParameterMetadata) param)
                 .forEach(param ->
                         bodySpec.header(
@@ -161,9 +160,6 @@ class ReactiveInterceptor implements MethodInterceptor {
         }
     }
 
-    //TODO inject encoders. Quick work-around providing functions as mappers
-    //like LocalDateMapper = Function<LocalDate, String> m = d-> d.toString();
-    //builder.defaultParamEncoder(m);
     private WebClient.RequestBodySpec initRequest(MethodMetadata metadata,
                                                   String processedUrl) {
         return client.method(metadata.getMethod())

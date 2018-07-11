@@ -27,20 +27,20 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
 
-public class ReactiveHttpClientBuilder {
+public final class ReactiveHttpBuilder {
 
     private final Map<Class, Function<Object, String>> defaultParamEncoders = new HashMap<>();
 
     private final Map<Class, Function<Object, Object>> defaultBodyEncoders = new HashMap<>();
 
-    public ReactiveHttpClientBuilder defaultParamEncoder(
+    public ReactiveHttpBuilder defaultParamEncoder(
             Class clazz,
             Function<Object, String> encoder) {
         defaultParamEncoders.put(clazz, encoder);
         return this;
     }
 
-    public ReactiveHttpClientBuilder defaultBodyEncoder(
+    public ReactiveHttpBuilder defaultBodyEncoder(
             Class clazz,
             Function<Object, Object> encoder) {
         defaultBodyEncoders.put(clazz, encoder);
@@ -51,18 +51,18 @@ public class ReactiveHttpClientBuilder {
     public <T> T target(Class<T> tClass, String url) throws NoSuchMethodException {
 
         final Collector<Method, ?, Map<Method, MethodMetadata>> collectorFunction =
-                Collectors.toMap(m -> m, ReactiveHttpClientBuilder::buildMethodMetadata);
+                Collectors.toMap(m -> m, ReactiveHttpBuilder::buildMethodMetadata);
 
         final Map<Method, MethodMetadata> methodMetadataMap = Stream
                 .of(tClass.getMethods())
-                .filter(ReactiveHttpClientBuilder::isAnnotated)
+                .filter(ReactiveHttpBuilder::isAnnotated)
                 .collect(collectorFunction);
 
         final Map<String, Set<String>> defaultHeaders = Stream
                 .of(tClass.getAnnotationsByType(Header.class))
                 .collect(groupingBy(Header::name, mapping(Header::value, toSet())));
 
-        final ReactiveInterceptor interceptor = new ReactiveInterceptor(
+        final ReactiveHttpInterceptor interceptor = new ReactiveHttpInterceptor(
                 buildClient(url, defaultHeaders),
                 methodMetadataMap,
                 defaultParamEncoders,
