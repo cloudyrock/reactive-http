@@ -1,11 +1,13 @@
 package org.github.cloudyrock.reactivehttp;
 
+import org.github.cloudyrock.reactivehttp.annotations.BodyMapper;
 import org.github.cloudyrock.reactivehttp.annotations.BodyParam;
 import org.github.cloudyrock.reactivehttp.annotations.Header;
 import org.github.cloudyrock.reactivehttp.annotations.HeaderParam;
 import org.github.cloudyrock.reactivehttp.annotations.PathParam;
 import org.github.cloudyrock.reactivehttp.annotations.QueryParam;
 import org.github.cloudyrock.reactivehttp.annotations.ReactiveHttp;
+import org.github.cloudyrock.reactivehttp.exception.ReactiveHttpConfigurationException;
 import org.springframework.cglib.proxy.Enhancer;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -29,21 +31,12 @@ import static java.util.stream.Collectors.toSet;
 
 public final class ReactiveHttpBuilder {
 
-    private final Map<Class, Function<Object, String>> defaultParamEncoders = new HashMap<>();
+    private final Map<Class, Function<?, String>> defaultParamEncoders = new HashMap<>();
 
-    private final Map<Class, Function<Object, Object>> defaultBodyEncoders = new HashMap<>();
-
-    public ReactiveHttpBuilder defaultParamEncoder(
-            Class clazz,
-            Function<Object, String> encoder) {
+    public <T extends Object> ReactiveHttpBuilder defaultParamEncoder(
+            Class<T> clazz,
+            Function<T, String> encoder) {
         defaultParamEncoders.put(clazz, encoder);
-        return this;
-    }
-
-    public ReactiveHttpBuilder defaultBodyEncoder(
-            Class clazz,
-            Function<Object, Object> encoder) {
-        defaultBodyEncoders.put(clazz, encoder);
         return this;
     }
 
@@ -65,8 +58,7 @@ public final class ReactiveHttpBuilder {
         final ReactiveHttpInterceptor interceptor = new ReactiveHttpInterceptor(
                 buildClient(url, defaultHeaders),
                 methodMetadataMap,
-                defaultParamEncoders,
-                defaultBodyEncoders);
+                defaultParamEncoders);
 
         return (T) Enhancer.create(tClass, interceptor);
 
@@ -96,7 +88,24 @@ public final class ReactiveHttpBuilder {
                 annotation.url(),
                 MediaType.parseMediaType(annotation.contentType()),
                 extractParameterizedType(method),
-                buildParametersMetadata(method));
+                buildParametersMetadata(method),
+                extractDefaultHeadersMap(method),
+                extractBodyEncoder(method));
+    }
+
+    private static org.github.cloudyrock.reactivehttp.BodyMapper extractBodyEncoder(Method method) {
+        try{
+            final BodyMapper ann = method.getAnnotation(BodyMapper.class);
+            return ann != null ? ann.value().getConstructor().newInstance() : null;
+        } catch (Exception ex) {
+            throw new ReactiveHttpConfigurationException(ex);
+        }
+
+    }
+
+    private static Map<String, Set<String>> extractDefaultHeadersMap(Method method) {
+        return Stream.of(method.getAnnotationsByType(Header.class))
+                .collect(groupingBy(Header::name, mapping(Header::value, toSet())));
     }
 
     private static Class extractParameterizedType(Method method) {

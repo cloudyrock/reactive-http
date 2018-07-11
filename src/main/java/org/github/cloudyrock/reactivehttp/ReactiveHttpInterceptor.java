@@ -1,6 +1,6 @@
 package org.github.cloudyrock.reactivehttp;
 
-import org.github.cloudyrock.reactivehttp.annotations.Header;
+import org.github.cloudyrock.reactivehttp.exception.ReactiveHttpRuntimeException;
 import org.springframework.cglib.proxy.MethodInterceptor;
 import org.springframework.cglib.proxy.MethodProxy;
 import org.springframework.http.HttpMethod;
@@ -11,31 +11,28 @@ import reactor.core.publisher.Mono;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Stream;
+import java.util.function.Supplier;
 
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toSet;
 import static org.springframework.http.HttpMethod.PATCH;
 import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.http.HttpMethod.PUT;
 
 class ReactiveHttpInterceptor implements MethodInterceptor {
 
+    private static final Supplier<BodyMapper> defaultBodyEncoder = () -> body -> body;
+
     private final WebClient client;
     private final Map<Method, MethodMetadata> metadataMap;
-    private final Map<Class, Function<Object, String>> defaultParamTypeEncoders;
-    private final Map<Class, Function<Object, Object>> defaultBodyTypeEncoders;
+    private final Map<Class, Function<?, String>> defaultParamTypeEncoders;
 
     ReactiveHttpInterceptor(WebClient client,
                             Map<Method, MethodMetadata> metadataMap,
-                            Map<Class, Function<Object, String>> defaultParamTypeEncoders,
-                            Map<Class, Function<Object, Object>> defaultBodyTypeEncoders) {
+                            Map<Class, Function<?, String>> defaultParamTypeEncoders) {
         this.client = client;
         this.metadataMap = metadataMap;
         this.defaultParamTypeEncoders = defaultParamTypeEncoders;
-        this.defaultBodyTypeEncoders = defaultBodyTypeEncoders;
     }
 
     @Override
@@ -46,7 +43,7 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
         final MethodMetadata callMetadata = extractCallMetadata(calledMethod);
         final String urlWithParams = buildUrlWithParams(callMetadata, execParams);
         final WebClient.RequestBodySpec spec = initRequest(callMetadata, urlWithParams);
-        addHeadersAnnotations(spec, calledMethod);
+        addDefaultHeaders(spec, callMetadata);
         addHeadersParam(spec, callMetadata, execParams);
         addBodyParam(spec, callMetadata, execParams);
         return runRequest(callMetadata, spec);
@@ -118,22 +115,25 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
     private void addBodyParam(WebClient.RequestBodySpec bodySpec,
                               MethodMetadata callMetadata,
                               Object[] parametersExecution) {
+        final Function<Object, Object> encodeFunction =body -> encodeBody(
+                body,
+                callMetadata.getBodyEncoder());
         if (isMethodWithBody(callMetadata)) {
             callMetadata.getParametersMetadata()
                     .stream()
                     .filter(ReactiveHttpInterceptor::isBodyParam)
                     .mapToInt(ParameterMetadata::getIndex)
                     .mapToObj(index -> parametersExecution[index])
-                    .map(this::encodeBody)
+                    .map(encodeFunction)
                     .findFirst()
                     .map(BodyInserters::fromObject)
                     .ifPresent(bodySpec::body);
         }
     }
 
-    private void addHeadersAnnotations(WebClient.RequestBodySpec spec, Method method) {
-        Stream.of(method.getAnnotationsByType(Header.class))
-                .collect(groupingBy(Header::name, mapping(Header::value, toSet())))
+    private void addDefaultHeaders(WebClient.RequestBodySpec spec,
+                                   MethodMetadata callMetadata) {
+        callMetadata.getDefaultHeaders()
                 .forEach((key, value) -> spec.header(key, value.toArray(new String[0])));
     }
 
@@ -156,19 +156,19 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
                     .exchange()
                     .flatMap(res -> res.bodyToMono(metadata.getParameterizedType()));
         } catch (Exception ex) {
-            throw new ReactiveHttpException(ex);
+            throw new ReactiveHttpRuntimeException(ex);
         }
     }
 
     private WebClient.RequestBodySpec initRequest(MethodMetadata metadata,
                                                   String processedUrl) {
-        return client.method(metadata.getMethod())
+        return client.method(metadata.getHttpMethod())
                 .uri(processedUrl)
                 .contentType(metadata.getContentType());
     }
 
     private boolean isMethodWithBody(MethodMetadata callMetadata) {
-        final HttpMethod callMethod = callMetadata.getMethod();
+        final HttpMethod callMethod = callMetadata.getHttpMethod();
         return POST.equals(callMethod)
                 | PUT.equals(callMethod)
                 || PATCH.equals(callMethod);
@@ -190,15 +190,16 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
         return parameterMetadata instanceof BodyParameterMetadata;
     }
 
+    @SuppressWarnings("unchecked")
     private String encodeParameter(Object param) {
         final Class c = param.getClass();
-        final Function<Object, String> encoderFunction = defaultParamTypeEncoders.get(c);
-        return encoderFunction != null ? encoderFunction.apply(param) : param.toString();
+        final Function encoderFunction = defaultParamTypeEncoders.get(c);
+        return encoderFunction != null ? (String) encoderFunction.apply(param) : param
+                .toString();
     }
 
-    private Object encodeBody(Object body) {
-        final Class c = body.getClass();
-        final Function<Object, Object> encoderFunction = defaultBodyTypeEncoders.get(c);
-        return encoderFunction != null ? encoderFunction.apply(body) : body;
+    @SuppressWarnings("unchecked")
+    private Object encodeBody(Object body, Optional<BodyMapper> encoderOpt) {
+        return encoderOpt.orElseGet(defaultBodyEncoder).encode(body);
     }
 }
