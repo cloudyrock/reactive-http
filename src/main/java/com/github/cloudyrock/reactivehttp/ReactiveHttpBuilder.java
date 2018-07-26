@@ -41,7 +41,7 @@ public final class ReactiveHttpBuilder {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T target(Class<T> tClass, String url) throws NoSuchMethodException {
+    public <T> T target(Class<T> tClass, String url) {
 
         final Collector<Method, ?, Map<Method, MethodMetadata>> collectorFunction =
                 Collectors.toMap(m -> m, ReactiveHttpBuilder::buildMethodMetadata);
