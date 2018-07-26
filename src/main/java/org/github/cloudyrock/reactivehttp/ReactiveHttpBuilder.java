@@ -93,7 +93,7 @@ public final class ReactiveHttpBuilder {
                 extractBodyEncoder(method));
     }
 
-    private static org.github.cloudyrock.reactivehttp.BodyMapper extractBodyEncoder(Method method) {
+    private static BodyMapperObject extractBodyEncoder(Method method) {
         try{
             final BodyMapper ann = method.getAnnotation(BodyMapper.class);
             return ann != null ? ann.value().getConstructor().newInstance() : null;

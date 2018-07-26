@@ -1,7 +1,7 @@
 package org.github.cloudyrock.reactivehttp;
 
 @FunctionalInterface
-public interface BodyMapper<T, R> {
+public interface BodyMapperObject<T, R> {
 
     R encode(T body);
 

@@ -21,7 +21,7 @@ import static org.springframework.http.HttpMethod.PUT;
 
 class ReactiveHttpInterceptor implements MethodInterceptor {
 
-    private static final Supplier<BodyMapper> defaultBodyEncoder = () -> body -> body;
+    private static final Supplier<BodyMapperObject> defaultBodyEncoder = () -> body -> body;
 
     private final WebClient client;
     private final Map<Method, MethodMetadata> metadataMap;
@@ -199,7 +199,7 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
     }
 
     @SuppressWarnings("unchecked")
-    private Object encodeBody(Object body, Optional<BodyMapper> encoderOpt) {
+    private Object encodeBody(Object body, Optional<BodyMapperObject> encoderOpt) {
         return encoderOpt.orElseGet(defaultBodyEncoder).encode(body);
     }
 }

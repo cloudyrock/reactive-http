@@ -16,7 +16,7 @@ final class MethodMetadata {
     private final HttpMethod httpMethod;
     private final List<ParameterMetadata> parametersMetadata;
     private final Map<String, Set<String>> defaultHeaders;
-    private final BodyMapper bodyEncoder;
+    private final BodyMapperObject bodyEncoder;
 
     MethodMetadata(HttpMethod httpMethod,
                    String url,
@@ -24,7 +24,7 @@ final class MethodMetadata {
                    Class parameterizedType,
                    List<ParameterMetadata> parametersMetadata,
                    Map<String, Set<String>> defaultHeaders,
-                   BodyMapper bodyEncoder) {
+                   BodyMapperObject bodyEncoder) {
         this.url = url;
         this.parameterizedType = parameterizedType;
         this.httpMethod = httpMethod;
@@ -58,7 +58,7 @@ final class MethodMetadata {
         return defaultHeaders;
     }
 
-    Optional<BodyMapper> getBodyEncoder() {
+    Optional<BodyMapperObject> getBodyEncoder() {
         return Optional.ofNullable(bodyEncoder);
     }
 }

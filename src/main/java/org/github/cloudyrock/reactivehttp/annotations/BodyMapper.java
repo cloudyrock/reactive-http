@@ -1,6 +1,6 @@
 package org.github.cloudyrock.reactivehttp.annotations;
 
-import org.github.cloudyrock.reactivehttp.BodyMapper;
+import org.github.cloudyrock.reactivehttp.BodyMapperObject;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -11,6 +11,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface BodyMapper {
 
-    Class<? extends org.github.cloudyrock.reactivehttp.BodyMapper> value();
+    Class<? extends BodyMapperObject> value();
 
 }
