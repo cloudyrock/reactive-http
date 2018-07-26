@@ -1,4 +1,4 @@
-package org.github.cloudyrock.reactivehttp.annotations;
+package com.github.cloudyrock.reactivehttp.annotations;
 
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.http.HttpMethod;

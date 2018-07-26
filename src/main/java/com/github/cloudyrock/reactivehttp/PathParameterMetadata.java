@@ -1,4 +1,4 @@
-package org.github.cloudyrock.reactivehttp;
+package com.github.cloudyrock.reactivehttp;
 
 final class PathParameterMetadata extends NamedParameterMetadata {
 

@@ -1,4 +1,4 @@
-package org.github.cloudyrock.reactivehttp;
+package com.github.cloudyrock.reactivehttp;
 
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;

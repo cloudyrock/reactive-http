@@ -1,13 +1,13 @@
-package org.github.cloudyrock.reactivehttp;
+package com.github.cloudyrock.reactivehttp;
 
-import org.github.cloudyrock.reactivehttp.annotations.BodyMapper;
-import org.github.cloudyrock.reactivehttp.annotations.BodyParam;
-import org.github.cloudyrock.reactivehttp.annotations.Header;
-import org.github.cloudyrock.reactivehttp.annotations.HeaderParam;
-import org.github.cloudyrock.reactivehttp.annotations.PathParam;
-import org.github.cloudyrock.reactivehttp.annotations.QueryParam;
-import org.github.cloudyrock.reactivehttp.annotations.ReactiveHttp;
-import org.github.cloudyrock.reactivehttp.exception.ReactiveHttpConfigurationException;
+import com.github.cloudyrock.reactivehttp.annotations.BodyMapper;
+import com.github.cloudyrock.reactivehttp.annotations.BodyParam;
+import com.github.cloudyrock.reactivehttp.annotations.HeaderParam;
+import com.github.cloudyrock.reactivehttp.annotations.PathParam;
+import com.github.cloudyrock.reactivehttp.annotations.QueryParam;
+import com.github.cloudyrock.reactivehttp.annotations.ReactiveHttp;
+import com.github.cloudyrock.reactivehttp.annotations.Header;
+import com.github.cloudyrock.reactivehttp.exception.ReactiveHttpConfigurationException;
 import org.springframework.cglib.proxy.Enhancer;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;

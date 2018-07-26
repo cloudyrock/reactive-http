@@ -1,4 +1,4 @@
-package org.github.cloudyrock.reactivehttp;
+package com.github.cloudyrock.reactivehttp;
 
 @FunctionalInterface
 public interface BodyMapperObject<T, R> {

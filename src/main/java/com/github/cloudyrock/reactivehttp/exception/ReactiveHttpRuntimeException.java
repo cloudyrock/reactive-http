@@ -1,4 +1,4 @@
-package org.github.cloudyrock.reactivehttp.exception;
+package com.github.cloudyrock.reactivehttp.exception;
 
 //TODO define structure to provide feedback
 public final class ReactiveHttpRuntimeException extends RuntimeException {

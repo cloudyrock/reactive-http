@@ -1,6 +1,6 @@
-package org.github.cloudyrock.reactivehttp;
+package com.github.cloudyrock.reactivehttp;
 
-import org.github.cloudyrock.reactivehttp.exception.ReactiveHttpRuntimeException;
+import com.github.cloudyrock.reactivehttp.exception.ReactiveHttpRuntimeException;
 import org.springframework.cglib.proxy.MethodInterceptor;
 import org.springframework.cglib.proxy.MethodProxy;
 import org.springframework.http.HttpMethod;

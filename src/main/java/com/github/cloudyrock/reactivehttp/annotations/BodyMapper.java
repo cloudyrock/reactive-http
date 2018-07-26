@@ -1,6 +1,6 @@
-package org.github.cloudyrock.reactivehttp.annotations;
+package com.github.cloudyrock.reactivehttp.annotations;
 
-import org.github.cloudyrock.reactivehttp.BodyMapperObject;
+import com.github.cloudyrock.reactivehttp.BodyMapperObject;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
