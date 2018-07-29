@@ -33,7 +33,7 @@ public final class ReactiveHttpBuilder {
 
     private final Map<Class, Function<?, String>> defaultParamEncoders = new HashMap<>();
 
-    public <T extends Object> ReactiveHttpBuilder defaultParamEncoder(
+    public <T> ReactiveHttpBuilder defaultParamEncoder(
             Class<T> clazz,
             Function<T, String> encoder) {
         defaultParamEncoders.put(clazz, encoder);
@@ -41,7 +41,7 @@ public final class ReactiveHttpBuilder {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T target(Class<T> tClass, String url) {
+    public <T> T target(Class<T> tClass, String host) {
 
         final Collector<Method, ?, Map<Method, MethodMetadata>> collectorFunction =
                 Collectors.toMap(m -> m, ReactiveHttpBuilder::buildMethodMetadata);
@@ -56,7 +56,7 @@ public final class ReactiveHttpBuilder {
                 .collect(groupingBy(Header::name, mapping(Header::value, toSet())));
 
         final ReactiveHttpInterceptor interceptor = new ReactiveHttpInterceptor(
-                buildClient(url, defaultHeaders),
+                buildClient(host, defaultHeaders),
                 methodMetadataMap,
                 defaultParamEncoders);
 
