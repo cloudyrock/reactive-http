@@ -1,12 +1,14 @@
 package com.github.cloudyrock.reactivehttp;
 
+import com.github.cloudyrock.dimmer.DimmerFeature;
+import com.github.cloudyrock.dimmer.FeatureExecutor;
 import com.github.cloudyrock.reactivehttp.annotations.BodyMapper;
 import com.github.cloudyrock.reactivehttp.annotations.BodyParam;
+import com.github.cloudyrock.reactivehttp.annotations.Header;
 import com.github.cloudyrock.reactivehttp.annotations.HeaderParam;
 import com.github.cloudyrock.reactivehttp.annotations.PathParam;
 import com.github.cloudyrock.reactivehttp.annotations.QueryParam;
 import com.github.cloudyrock.reactivehttp.annotations.ReactiveHttp;
-import com.github.cloudyrock.reactivehttp.annotations.Header;
 import com.github.cloudyrock.reactivehttp.exception.ReactiveHttpConfigurationException;
 import org.springframework.cglib.proxy.Enhancer;
 import org.springframework.http.MediaType;
@@ -32,6 +34,7 @@ import static java.util.stream.Collectors.toSet;
 public final class ReactiveHttpBuilder {
 
     private final Map<Class, Function<?, String>> defaultParamEncoders = new HashMap<>();
+    private FeatureExecutor featureExecutor;
 
     public <T> ReactiveHttpBuilder defaultParamEncoder(
             Class<T> clazz,
@@ -39,6 +42,12 @@ public final class ReactiveHttpBuilder {
         defaultParamEncoders.put(clazz, encoder);
         return this;
     }
+
+    public <T> ReactiveHttpBuilder dimmerFeatureExecutor(FeatureExecutor featureExecutor) {
+        this.featureExecutor = featureExecutor;
+        return this;
+    }
+
 
     @SuppressWarnings("unchecked")
     public <T> T target(Class<T> tClass, String host) {
@@ -55,11 +64,20 @@ public final class ReactiveHttpBuilder {
                 .of(tClass.getAnnotationsByType(Header.class))
                 .collect(groupingBy(Header::name, mapping(Header::value, toSet())));
 
-        final ReactiveHttpInterceptor interceptor = new ReactiveHttpInterceptor(
-                buildClient(host, defaultHeaders),
-                methodMetadataMap,
-                defaultParamEncoders);
+        final ReactiveHttpInterceptor interceptor;
+        if(featureExecutor != null) {
+            interceptor = new ReactiveHttpDimmerInterceptor(
+                    buildClient(host, defaultHeaders),
+                    methodMetadataMap,
+                    defaultParamEncoders,
+                    featureExecutor);
+        } else {
 
+            interceptor = new ReactiveHttpInterceptor(
+                    buildClient(host, defaultHeaders),
+                    methodMetadataMap,
+                    defaultParamEncoders);
+        }
         return (T) Enhancer.create(tClass, interceptor);
 
     }
@@ -82,6 +100,7 @@ public final class ReactiveHttpBuilder {
 
     private static MethodMetadata buildMethodMetadata(Method method) {
         final ReactiveHttp annotation = method.getAnnotation(ReactiveHttp.class);
+        final DimmerFeature dimmerFeature = method.getAnnotation(DimmerFeature.class);
 
         return new MethodMetadata(
                 annotation.httpMethod(),
@@ -90,11 +109,12 @@ public final class ReactiveHttpBuilder {
                 extractParameterizedType(method),
                 buildParametersMetadata(method),
                 extractDefaultHeadersMap(method),
-                extractBodyEncoder(method));
+                extractBodyEncoder(method),
+                dimmerFeature != null ? dimmerFeature.value() : null);
     }
 
     private static BodyMapperObject extractBodyEncoder(Method method) {
-        try{
+        try {
             final BodyMapper ann = method.getAnnotation(BodyMapper.class);
             return ann != null ? ann.value().getConstructor().newInstance() : null;
         } catch (Exception ex) {

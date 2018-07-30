@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-final class MethodMetadata {
+final class DimmerMethodMetadata {
 
     private final String url;
     private final MediaType contentType;
@@ -19,14 +19,14 @@ final class MethodMetadata {
     private final BodyMapperObject bodyEncoder;
     private final String dimmerFeature;
 
-    MethodMetadata(HttpMethod httpMethod,
-                   String url,
-                   MediaType contentType,
-                   Class parameterizedType,
-                   List<ParameterMetadata> parametersMetadata,
-                   Map<String, Set<String>> defaultHeaders,
-                   BodyMapperObject bodyEncoder,
-                   String dimmerFeature) {
+    DimmerMethodMetadata(HttpMethod httpMethod,
+                         String url,
+                         MediaType contentType,
+                         Class parameterizedType,
+                         List<ParameterMetadata> parametersMetadata,
+                         Map<String, Set<String>> defaultHeaders,
+                         BodyMapperObject bodyEncoder,
+                         String dimmerFeature) {
         this.url = url;
         this.parameterizedType = parameterizedType;
         this.httpMethod = httpMethod;

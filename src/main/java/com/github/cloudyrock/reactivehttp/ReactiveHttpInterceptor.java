@@ -49,7 +49,7 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
         return runRequest(callMetadata, spec);
     }
 
-    private MethodMetadata extractCallMetadata(Method calledMethod) {
+    MethodMetadata extractCallMetadata(Method calledMethod) {
         MethodMetadata metadata = metadataMap.get(calledMethod);
         if (metadata == null) {
             throw new RuntimeException(
@@ -59,7 +59,7 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
         return metadata;
     }
 
-    private String buildUrlWithParams(MethodMetadata metadata,
+    String buildUrlWithParams(MethodMetadata metadata,
                                       Object[] objects) {
         final String urlWithSlash = metadata.getUrl().startsWith("/")
                 ? metadata.getUrl()
@@ -112,7 +112,7 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
         }
     }
 
-    private void addBodyParam(WebClient.RequestBodySpec bodySpec,
+    void addBodyParam(WebClient.RequestBodySpec bodySpec,
                               MethodMetadata callMetadata,
                               Object[] parametersExecution) {
         final Function<Object, Object> encodeFunction =body -> encodeBody(
@@ -131,13 +131,13 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
         }
     }
 
-    private void addDefaultHeaders(WebClient.RequestBodySpec spec,
+    void addDefaultHeaders(WebClient.RequestBodySpec spec,
                                    MethodMetadata callMetadata) {
         callMetadata.getDefaultHeaders()
                 .forEach((key, value) -> spec.header(key, value.toArray(new String[0])));
     }
 
-    private void addHeadersParam(WebClient.RequestBodySpec bodySpec,
+    void addHeadersParam(WebClient.RequestBodySpec bodySpec,
                                  MethodMetadata callMetadata,
                                  Object[] paramsExecution) {
         callMetadata.getParametersMetadata().stream()
@@ -149,8 +149,8 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
                                 encodeParameter(paramsExecution[param.getIndex()])));
     }
 
-    private Mono<Object> runRequest(MethodMetadata metadata,
-                                    WebClient.RequestBodySpec bodySpec) {
+    Mono<Object> runRequest(MethodMetadata metadata,
+                            WebClient.RequestBodySpec bodySpec) {
         try {
             return bodySpec
                     .exchange()
@@ -160,7 +160,7 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
         }
     }
 
-    private WebClient.RequestBodySpec initRequest(MethodMetadata metadata,
+    WebClient.RequestBodySpec initRequest(MethodMetadata metadata,
                                                   String processedUrl) {
         return client.method(metadata.getHttpMethod())
                 .uri(processedUrl)
