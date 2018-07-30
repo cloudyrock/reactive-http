@@ -34,29 +34,30 @@ class ReactiveHttpDimmerInterceptor extends ReactiveHttpInterceptor {
     }
 
     @Override
-    public Object intercept(Object calledObject,
-                            Method calledMethod,
+    public Object intercept(Object object,
+                            Method method,
                             Object[] execParams,
                             MethodProxy methodProxy) throws Throwable {
 
-        final MethodMetadata callMetadata = extractCallMetadata(calledMethod);
-        final String urlWithParams = buildUrlWithParams(callMetadata, execParams);
-        final WebClient.RequestBodySpec spec = initRequest(callMetadata, urlWithParams);
-        addDefaultHeaders(spec, callMetadata);
-        addHeadersParam(spec, callMetadata, execParams);
-        addBodyParam(spec, callMetadata, execParams);
-
+        final MethodMetadata callMetadata = extractCallMetadata(method);
         if(callMetadata.getDimmerFeature().isPresent()) {
-            final String feature = callMetadata.getDimmerFeature().get();
-            final FeatureInvocation featureInvocation = createFeatureInvocation(
-                    feature, calledObject, calledMethod, execParams);
-            return featureExecutor.executeDimmerFeature(
-                    feature,
-                    featureInvocation,
-                    () -> runRequest(callMetadata, spec));
+            return executeDimmerFeature(object, method, execParams, callMetadata);
         } else {
-            return runRequest(callMetadata, spec);
+            return defaultIntercept(execParams, callMetadata);
         }
+    }
+
+    private Object executeDimmerFeature(Object calledObject,
+                                        Method calledMethod,
+                                        Object[] execParams,
+                                        MethodMetadata callMetadata) throws Throwable {
+        final String feature = callMetadata.getDimmerFeature().get();
+        final FeatureInvocation featureInvocation = createFeatureInvocation(
+                feature, calledObject, calledMethod, execParams);
+        return featureExecutor.executeDimmerFeature(
+                feature,
+                featureInvocation,
+                () -> defaultIntercept(execParams, callMetadata));
     }
 
     private FeatureInvocation createFeatureInvocation(String feature,

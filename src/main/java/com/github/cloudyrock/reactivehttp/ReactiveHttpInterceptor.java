@@ -40,13 +40,26 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
                             Method calledMethod,
                             Object[] execParams,
                             MethodProxy methodProxy) throws Throwable {
-        final MethodMetadata callMetadata = extractCallMetadata(calledMethod);
+        if(isAnnotated(calledMethod)) {
+            final MethodMetadata callMetadata = extractCallMetadata(calledMethod);
+            return defaultIntercept(execParams, callMetadata);
+        } else {
+            return calledMethod.invoke(calledObject, execParams);
+        }
+
+    }
+
+    Object defaultIntercept(Object[] execParams, MethodMetadata callMetadata) {
         final String urlWithParams = buildUrlWithParams(callMetadata, execParams);
         final WebClient.RequestBodySpec spec = initRequest(callMetadata, urlWithParams);
         addDefaultHeaders(spec, callMetadata);
         addHeadersParam(spec, callMetadata, execParams);
         addBodyParam(spec, callMetadata, execParams);
         return runRequest(callMetadata, spec);
+    }
+
+    private boolean isAnnotated(Method calledMethod) {
+        return metadataMap.containsKey(calledMethod);
     }
 
     MethodMetadata extractCallMetadata(Method calledMethod) {

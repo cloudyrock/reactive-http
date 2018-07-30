@@ -10,6 +10,8 @@ import com.github.cloudyrock.reactivehttp.annotations.PathParam;
 import com.github.cloudyrock.reactivehttp.annotations.QueryParam;
 import com.github.cloudyrock.reactivehttp.annotations.ReactiveHttp;
 import com.github.cloudyrock.reactivehttp.exception.ReactiveHttpConfigurationException;
+import org.apache.logging.slf4j.SLF4JLogger;
+import org.slf4j.Logger;
 import org.springframework.cglib.proxy.Enhancer;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -44,6 +46,7 @@ public final class ReactiveHttpBuilder {
     }
 
     public <T> ReactiveHttpBuilder dimmerFeatureExecutor(FeatureExecutor featureExecutor) {
+
         this.featureExecutor = featureExecutor;
         return this;
     }
