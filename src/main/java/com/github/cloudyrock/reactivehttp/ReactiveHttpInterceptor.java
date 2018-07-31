@@ -40,12 +40,8 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
                             Method calledMethod,
                             Object[] execParams,
                             MethodProxy methodProxy) throws Throwable {
-        if(isAnnotated(calledMethod)) {
-            final MethodMetadata callMetadata = extractCallMetadata(calledMethod);
-            return defaultIntercept(execParams, callMetadata);
-        } else {
-            return calledMethod.invoke(calledObject, execParams);
-        }
+        final MethodMetadata callMetadata = extractCallMetadata(calledMethod);
+        return defaultIntercept(execParams, callMetadata);
 
     }
 
