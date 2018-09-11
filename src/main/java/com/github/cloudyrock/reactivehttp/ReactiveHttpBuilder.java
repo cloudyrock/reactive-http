@@ -90,7 +90,6 @@ public final class ReactiveHttpBuilder {
                     defaultParamEncoders,
                     featureExecutor);
         } else {
-
             interceptor = new ReactiveHttpInterceptor(
                     buildClient(host, defaultHeaders),
                     methodMetadataMap,
@@ -102,15 +101,12 @@ public final class ReactiveHttpBuilder {
 
     private WebClient buildClient(String baseUrl,
                                   Map<String, Set<String>> headers) {
-
-        final ObjectMapper mapperEncoder = buildMapperEncoder();
-        final ObjectMapper mapperDecoder = buildMapperDecoder();
-        ExchangeStrategies strategies = ExchangeStrategies
+        final ExchangeStrategies strategies = ExchangeStrategies
                 .builder()
                 .codecs(codecConfigurer -> {
                     final ClientCodecConfigurer.ClientDefaultCodecs defaultCodecs = codecConfigurer.defaultCodecs();
-                    defaultCodecs.jackson2JsonEncoder(new Jackson2JsonEncoder(mapperEncoder, APPLICATION_JSON));
-                    defaultCodecs.jackson2JsonDecoder(new Jackson2JsonDecoder(mapperDecoder, APPLICATION_JSON));
+                    defaultCodecs.jackson2JsonEncoder(new Jackson2JsonEncoder(buildMapperEncoder(), APPLICATION_JSON));
+                    defaultCodecs.jackson2JsonDecoder(new Jackson2JsonDecoder(buildMapperDecoder(), APPLICATION_JSON));
                 }).build();
 
         final WebClient.Builder builder = WebClient
