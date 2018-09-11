@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.github.cloudyrock.dimmer.DimmerFeature;
 import com.github.cloudyrock.dimmer.FeatureExecutor;
 import com.github.cloudyrock.reactivehttp.annotations.BodyMapper;
@@ -25,13 +24,12 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -48,15 +46,12 @@ public final class ReactiveHttpBuilder {
     private final Map<Class, JsonDeserializer> jsonDeserializersMap = new HashMap<>();
     private FeatureExecutor featureExecutor;
 
-    public <T> ReactiveHttpBuilder defaultParamEncoder(
-            Class<T> clazz,
-            Function<T, String> encoder) {
+    public <T> ReactiveHttpBuilder defaultParamEncoder(Class<T> clazz, Function<T, String> encoder) {
         defaultParamEncoders.put(clazz, encoder);
         return this;
     }
 
     public ReactiveHttpBuilder dimmerFeatureExecutor(FeatureExecutor featureExecutor) {
-
         this.featureExecutor = featureExecutor;
         return this;
     }
@@ -138,9 +133,7 @@ public final class ReactiveHttpBuilder {
         jsonSerializersMap.forEach(module::addSerializer);
         mapperEncoder.registerModule(module);
         return mapperEncoder;
-
     }
-
 
     @SuppressWarnings("unchecked")
     private ObjectMapper buildMapperDecoder() {
@@ -150,7 +143,6 @@ public final class ReactiveHttpBuilder {
         mapperDecoder.registerModule(module);
         return mapperDecoder;
     }
-
 
     private static boolean isAnnotated(Method method) {
         return method.isAnnotationPresent(ReactiveHttp.class);
