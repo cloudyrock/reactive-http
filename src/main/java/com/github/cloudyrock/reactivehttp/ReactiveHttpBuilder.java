@@ -16,6 +16,7 @@ import com.github.cloudyrock.reactivehttp.annotations.ReactiveHttp;
 import com.github.cloudyrock.reactivehttp.exception.ReactiveHttpConfigurationException;
 import org.springframework.cglib.proxy.Enhancer;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.ClientCodecConfigurer;
 import org.springframework.http.codec.json.Jackson2JsonDecoder;
 import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
@@ -29,7 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 public final class ReactiveHttpBuilder {
 
@@ -106,13 +107,10 @@ public final class ReactiveHttpBuilder {
         final ObjectMapper mapperDecoder = buildMapperDecoder();
         ExchangeStrategies strategies = ExchangeStrategies
                 .builder()
-                .codecs(clientDefaultCodecsConfigurer -> {
-                    clientDefaultCodecsConfigurer.defaultCodecs().jackson2JsonEncoder(
-                            new Jackson2JsonEncoder(mapperEncoder,
-                                    MediaType.APPLICATION_JSON));
-                    clientDefaultCodecsConfigurer.defaultCodecs().jackson2JsonDecoder(
-                            new Jackson2JsonDecoder(mapperDecoder,
-                                    MediaType.APPLICATION_JSON));
+                .codecs(codecConfigurer -> {
+                    final ClientCodecConfigurer.ClientDefaultCodecs defaultCodecs = codecConfigurer.defaultCodecs();
+                    defaultCodecs.jackson2JsonEncoder(new Jackson2JsonEncoder(mapperEncoder, APPLICATION_JSON));
+                    defaultCodecs.jackson2JsonDecoder(new Jackson2JsonDecoder(mapperDecoder, APPLICATION_JSON));
                 }).build();
 
         final WebClient.Builder builder = WebClient
@@ -120,8 +118,7 @@ public final class ReactiveHttpBuilder {
                 .exchangeStrategies(strategies)
                 .baseUrl(baseUrl);
 
-        headers.keySet().forEach(key -> builder.defaultHeader(
-                key, headers.get(key).toArray(new String[0])));
+        headers.keySet().forEach(key -> builder.defaultHeader(key, headers.get(key).toArray(new String[0])));
 
         return builder.build();
     }
