@@ -1,5 +1,10 @@
 package com.github.cloudyrock.reactivehttp;
 
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.github.cloudyrock.dimmer.DimmerFeature;
 import com.github.cloudyrock.dimmer.FeatureExecutor;
 import com.github.cloudyrock.reactivehttp.annotations.BodyMapper;
@@ -10,15 +15,18 @@ import com.github.cloudyrock.reactivehttp.annotations.PathParam;
 import com.github.cloudyrock.reactivehttp.annotations.QueryParam;
 import com.github.cloudyrock.reactivehttp.annotations.ReactiveHttp;
 import com.github.cloudyrock.reactivehttp.exception.ReactiveHttpConfigurationException;
-import org.apache.logging.slf4j.SLF4JLogger;
-import org.slf4j.Logger;
 import org.springframework.cglib.proxy.Enhancer;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.codec.json.Jackson2JsonEncoder;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +44,8 @@ import static java.util.stream.Collectors.toSet;
 public final class ReactiveHttpBuilder {
 
     private final Map<Class, Function<?, String>> defaultParamEncoders = new HashMap<>();
+    private final Map<Class, JsonSerializer> jsonSerializersMap = new HashMap<>();
+    private final Map<Class, JsonDeserializer> jsonDeserializersMap = new HashMap<>();
     private FeatureExecutor featureExecutor;
 
     public <T> ReactiveHttpBuilder defaultParamEncoder(
@@ -45,12 +55,21 @@ public final class ReactiveHttpBuilder {
         return this;
     }
 
-    public <T> ReactiveHttpBuilder dimmerFeatureExecutor(FeatureExecutor featureExecutor) {
+    public ReactiveHttpBuilder dimmerFeatureExecutor(FeatureExecutor featureExecutor) {
 
         this.featureExecutor = featureExecutor;
         return this;
     }
 
+    public <T> ReactiveHttpBuilder addJacksonSerializer(Class<T> clazz, JsonSerializer<T> serializer) {
+        jsonSerializersMap.put(clazz, serializer);
+        return this;
+    }
+
+    public <T> ReactiveHttpBuilder addJacksonDeserializer(Class<T> clazz, JsonDeserializer<T> deserializer) {
+        jsonDeserializersMap.put(clazz, deserializer);
+        return this;
+    }
 
     @SuppressWarnings("unchecked")
     public <T> T target(Class<T> tClass, String host) {
@@ -68,7 +87,7 @@ public final class ReactiveHttpBuilder {
                 .collect(groupingBy(Header::name, mapping(Header::value, toSet())));
 
         final ReactiveHttpInterceptor interceptor;
-        if(featureExecutor != null) {
+        if (featureExecutor != null) {
             interceptor = new ReactiveHttpDimmerInterceptor(
                     buildClient(host, defaultHeaders),
                     methodMetadataMap,
@@ -85,10 +104,25 @@ public final class ReactiveHttpBuilder {
 
     }
 
-    private static WebClient buildClient(String baseUrl,
-                                         Map<String, Set<String>> headers) {
+    private WebClient buildClient(String baseUrl,
+                                  Map<String, Set<String>> headers) {
+
+        final ObjectMapper mapperEncoder = buildMapperEncoder();
+        final ObjectMapper mapperDecoder = buildMapperDecoder();
+        ExchangeStrategies strategies = ExchangeStrategies
+                .builder()
+                .codecs(clientDefaultCodecsConfigurer -> {
+                    clientDefaultCodecsConfigurer.defaultCodecs().jackson2JsonEncoder(
+                            new Jackson2JsonEncoder(mapperEncoder,
+                                    MediaType.APPLICATION_JSON));
+                    clientDefaultCodecsConfigurer.defaultCodecs().jackson2JsonDecoder(
+                            new Jackson2JsonDecoder(mapperDecoder,
+                                    MediaType.APPLICATION_JSON));
+                }).build();
+
         final WebClient.Builder builder = WebClient
                 .builder()
+                .exchangeStrategies(strategies)
                 .baseUrl(baseUrl);
 
         headers.keySet().forEach(key -> builder.defaultHeader(
@@ -96,6 +130,27 @@ public final class ReactiveHttpBuilder {
 
         return builder.build();
     }
+
+    @SuppressWarnings("unchecked")
+    private ObjectMapper buildMapperEncoder() {
+        ObjectMapper mapperEncoder = new ObjectMapper();
+        SimpleModule module = new SimpleModule();
+        jsonSerializersMap.forEach(module::addSerializer);
+        mapperEncoder.registerModule(module);
+        return mapperEncoder;
+
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private ObjectMapper buildMapperDecoder() {
+        ObjectMapper mapperDecoder = new ObjectMapper();
+        SimpleModule module = new SimpleModule();
+        jsonDeserializersMap.forEach(module::addDeserializer);
+        mapperDecoder.registerModule(module);
+        return mapperDecoder;
+    }
+
 
     private static boolean isAnnotated(Method method) {
         return method.isAnnotationPresent(ReactiveHttp.class);
