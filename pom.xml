@@ -4,7 +4,7 @@
 
 	<groupId>com.github.cloudyrock.http</groupId>
 	<artifactId>reactive-http</artifactId>
-	<version>1.1.2</version>
+	<version>1.1.3-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>reactive-http</name>
@@ -105,7 +105,7 @@
 		<connection>scm:git:git@github.com:cloudyrock/reactive-http.git</connection>
 		<developerConnection>scm:git:git@github.com:cloudyrock/reactive-http.git</developerConnection>
 		<url>https://github.com/cloudyrock/reactive-http.git</url>
-		<tag>reactive-http-1.1.2</tag>
+		<tag>reactive-http-0.0.1</tag>
 	</scm>
 
 	<distributionManagement>
