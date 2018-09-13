@@ -11,9 +11,7 @@ import reactor.core.publisher.Mono;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static org.springframework.http.HttpMethod.PATCH;
 import static org.springframework.http.HttpMethod.POST;
@@ -21,18 +19,12 @@ import static org.springframework.http.HttpMethod.PUT;
 
 class ReactiveHttpInterceptor implements MethodInterceptor {
 
-    private static final Supplier<BodyMapperObject> defaultBodyEncoder = () -> body -> body;
-
     private final WebClient client;
     private final Map<Method, MethodMetadata> metadataMap;
-    private final Map<Class, Function<?, String>> defaultParamTypeEncoders;
 
-    ReactiveHttpInterceptor(WebClient client,
-                            Map<Method, MethodMetadata> metadataMap,
-                            Map<Class, Function<?, String>> defaultParamTypeEncoders) {
+    ReactiveHttpInterceptor(WebClient client, Map<Method, MethodMetadata> metadataMap) {
         this.client = client;
         this.metadataMap = metadataMap;
-        this.defaultParamTypeEncoders = defaultParamTypeEncoders;
     }
 
     @Override
@@ -54,10 +46,6 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
         return runRequest(callMetadata, spec);
     }
 
-    private boolean isAnnotated(Method calledMethod) {
-        return metadataMap.containsKey(calledMethod);
-    }
-
     MethodMetadata extractCallMetadata(Method calledMethod) {
         MethodMetadata metadata = metadataMap.get(calledMethod);
         if (metadata == null) {
@@ -69,7 +57,7 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
     }
 
     String buildUrlWithParams(MethodMetadata metadata,
-                                      Object[] objects) {
+                              Object[] objects) {
         final String urlWithSlash = metadata.getUrl().startsWith("/")
                 ? metadata.getUrl()
                 : metadata.getUrl().substring(1, metadata.getUrl().length() - 1);
@@ -91,9 +79,7 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
                         paramMetadata;
                 final String paramName = namedMetadata.getName();
                 final int index = namedMetadata.getIndex();
-                url = url.replace(
-                        "{" + paramName + "}",
-                        encodeParameter(objects[index]));
+                url = url.replace("{" + paramName + "}",objects[index].toString());
             }
         }
         return url;
@@ -116,24 +102,20 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
                 }
                 urlBuilder.append(namedMetadata.getName())
                         .append("=")
-                        .append(encodeParameter(objects[i]));
+                        .append(objects[i]);
             }
         }
     }
 
     void addBodyParam(WebClient.RequestBodySpec bodySpec,
-                              MethodMetadata callMetadata,
-                              Object[] parametersExecution) {
-        final Function<Object, Object> encodeFunction =body -> encodeBody(
-                body,
-                callMetadata.getBodyEncoder());
+                      MethodMetadata callMetadata,
+                      Object[] parametersExecution) {
         if (isMethodWithBody(callMetadata)) {
             callMetadata.getParametersMetadata()
                     .stream()
                     .filter(ReactiveHttpInterceptor::isBodyParam)
                     .mapToInt(ParameterMetadata::getIndex)
                     .mapToObj(index -> parametersExecution[index])
-                    .map(encodeFunction)
                     .findFirst()
                     .map(BodyInserters::fromObject)
                     .ifPresent(bodySpec::body);
@@ -141,21 +123,18 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
     }
 
     void addDefaultHeaders(WebClient.RequestBodySpec spec,
-                                   MethodMetadata callMetadata) {
+                           MethodMetadata callMetadata) {
         callMetadata.getDefaultHeaders()
                 .forEach((key, value) -> spec.header(key, value.toArray(new String[0])));
     }
 
     void addHeadersParam(WebClient.RequestBodySpec bodySpec,
-                                 MethodMetadata callMetadata,
-                                 Object[] paramsExecution) {
+                         MethodMetadata callMetadata,
+                         Object[] paramsExecution) {
         callMetadata.getParametersMetadata().stream()
                 .filter(ReactiveHttpInterceptor::isHeaderParam)
                 .map(param -> (NamedParameterMetadata) param)
-                .forEach(param ->
-                        bodySpec.header(
-                                param.getName(),
-                                encodeParameter(paramsExecution[param.getIndex()])));
+                .forEach(param -> bodySpec.header(param.getName(), paramsExecution[param.getIndex()].toString()));
     }
 
     Mono<Object> runRequest(MethodMetadata metadata,
@@ -170,7 +149,7 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
     }
 
     WebClient.RequestBodySpec initRequest(MethodMetadata metadata,
-                                                  String processedUrl) {
+                                          String processedUrl) {
         return client.method(metadata.getHttpMethod())
                 .uri(processedUrl)
                 .contentType(metadata.getContentType());
@@ -199,16 +178,4 @@ class ReactiveHttpInterceptor implements MethodInterceptor {
         return parameterMetadata instanceof BodyParameterMetadata;
     }
 
-    @SuppressWarnings("unchecked")
-    private String encodeParameter(Object param) {
-        final Class c = param.getClass();
-        final Function encoderFunction = defaultParamTypeEncoders.get(c);
-        return encoderFunction != null ? (String) encoderFunction.apply(param) : param
-                .toString();
-    }
-
-    @SuppressWarnings("unchecked")
-    private Object encodeBody(Object body, Optional<BodyMapperObject> encoderOpt) {
-        return encoderOpt.orElseGet(defaultBodyEncoder).encode(body);
-    }
 }
