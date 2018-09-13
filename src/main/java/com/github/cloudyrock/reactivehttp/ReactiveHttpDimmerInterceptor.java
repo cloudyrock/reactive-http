@@ -27,9 +27,8 @@ class ReactiveHttpDimmerInterceptor extends ReactiveHttpInterceptor {
 
     ReactiveHttpDimmerInterceptor(WebClient client,
                                   Map<Method, MethodMetadata> metadataMap,
-                                  Map<Class, Function<?, String>> defaultParamTypeEncoders,
                                   FeatureExecutor featureExecutor) {
-        super(client, metadataMap, defaultParamTypeEncoders);
+        super(client, metadataMap);
         this.featureExecutor = featureExecutor;
     }
 

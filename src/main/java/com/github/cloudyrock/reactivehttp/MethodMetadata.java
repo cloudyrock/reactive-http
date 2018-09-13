@@ -16,7 +16,6 @@ final class MethodMetadata {
     private final HttpMethod httpMethod;
     private final List<ParameterMetadata> parametersMetadata;
     private final Map<String, Set<String>> defaultHeaders;
-    private final BodyMapperObject bodyEncoder;
     private final String dimmerFeature;
 
     MethodMetadata(HttpMethod httpMethod,
@@ -25,7 +24,6 @@ final class MethodMetadata {
                    Class parameterizedType,
                    List<ParameterMetadata> parametersMetadata,
                    Map<String, Set<String>> defaultHeaders,
-                   BodyMapperObject bodyEncoder,
                    String dimmerFeature) {
         this.url = url;
         this.parameterizedType = parameterizedType;
@@ -33,7 +31,6 @@ final class MethodMetadata {
         this.contentType = contentType;
         this.parametersMetadata = parametersMetadata;
         this.defaultHeaders = defaultHeaders;
-        this.bodyEncoder = bodyEncoder;
         this.dimmerFeature = dimmerFeature;
     }
 
@@ -59,10 +56,6 @@ final class MethodMetadata {
 
     Map<String, Set<String>> getDefaultHeaders() {
         return defaultHeaders;
-    }
-
-    Optional<BodyMapperObject> getBodyEncoder() {
-        return Optional.ofNullable(bodyEncoder);
     }
 
     Optional<String> getDimmerFeature() {
