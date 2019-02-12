@@ -3,4 +3,4 @@
 Lightweight Java library to wrap reactive http clients in an annotations style.
 
 #### Status
-> **NO STABLE YET. Still in development**
+> **STILL IN DEVELOPMENT. NOT READY FOR PUBLIC USE YET**
